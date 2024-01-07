@@ -28,7 +28,7 @@ def linkedin(country, location, job) :
     options.add_argument(f"--proxy-server={proxy}")
     chrome = webdriver.Chrome(options=options)
     chrome.get(f'https://www.google.com/search?q={location} AND {job} -inurl: dir/ email "@gmail.com" site:{country}.linkedin.com/in/ OR site:{country}.linkedin.com/pub/')
-    time.sleep(5)
+    time.sleep(3)
     # SCROLL DOWN
     for i in range(4):
         chrome.execute_script("window.scrollTo(0,document.body.scrollHeight)")
@@ -44,18 +44,17 @@ def linkedin(country, location, job) :
             .key_up(Keys.CONTROL) \
             .perform()
         chrome.switch_to.window(chrome.window_handles[1])
+        time.sleep(20)
         link = chrome.current_url
-        name = unicodedata.normalize('NFKD', chrome.find_element(By.TAG_NAME, "h1").text).encode('ascii', 'ignore').decode('utf-8')
-        title = unicodedata.normalize('NFKD', chrome.find_elements(By.CSS_SELECTOR, "h2")[0].text).encode('ascii', 'ignore').decode('utf-8')
-        location= ""
+        name = chrome.find_element(By.TAG_NAME, "h1").text
+        title = chrome.find_elements(By.CSS_SELECTOR, "h2")[0].text
         l = chrome.find_element(By.CSS_SELECTOR, "h3:nth-of-type(1) div div span")
         location = unicodedata.normalize('NFKD', l.text).encode('ascii', 'ignore').decode('utf-8') 
         txt = chrome.find_elements(By.CSS_SELECTOR, "section")[0].text
         emails = re.search(r'[\w.+-]+@[\w-]+\.[\w.-]+', txt)
-        phone = re.findall(r'[\+\(]?[1-9][0-9 .\-\(\)]{8,}[0-9]', txt)
+        phone = re.findall(r'[\+\(]?[1-9][0-9.\-\(\)]{8,}[0-9]', txt)
         if len(phone) > 0 : ph = phone[0]  
         else : ph = ""
-        
         if emails != None or ph != "" :
             new_data = {
                 "fullName" : name,
@@ -67,33 +66,28 @@ def linkedin(country, location, job) :
                 "keyword" : "MODIFY LATER",
                 "source" : link
             }
-
             with open("data.json","r") as f :
                 data = json.loads(f.read()) 
                 data.append(new_data)
                 with open("data.json", "w") as w :
-                    json.dump(data,w)
+                    json.dump(data,w)  
+            chrome.quit()
             time.sleep(2)
-
+            
     
 jobs = ["affiliate","management" ,"web developer", "ceo", "seo", "finance", "accountant","banker","insurance"]
 countries = ["UK","IT","ES","CA","SE","DE","FR","BZ"]
-
 while True :
     job = random.choice(jobs)
     country = random.choice(countries)
-    for job in jobs :
-        for country in countries :
-            cities = []
-            with open("geo.json", 'r',encoding="utf-8") as f :
-                data = json.loads(f.read())
-                for c in data :
-                    if country in c["code"] :
-                        cities.append(c["name"])
-            for city in cities :
-                try :
-                    linkedin(country, city, job)
-                    random.shuffle(jobs)
-                    time.sleep(2)
-                except : 
-                    pass   
+    cities = []
+    with open("geo.json", 'r',encoding="utf-8") as f :
+        data = json.loads(f.read())
+        for c in data :
+            if country in c["code"] :
+                cities.append(c["name"])
+    for city in cities :
+        linkedin(country, city, job)
+        random.shuffle(jobs)
+        time.sleep(2)
+                  
